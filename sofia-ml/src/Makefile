@@ -14,7 +14,7 @@
 # limitations under the License.                                                 #
 #================================================================================#
 
-GCC= g++ -fpic -I/Library/Frameworks/Python.framework/Headers/ -I/usr/include/python2.7 -c 
+GCC= g++ -fpic -c -I /System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/ 
 LINK=g++ -shared -lm -lpython2.7 
 
 #================================================================================#
@@ -29,10 +29,8 @@ sofia-ml:
 	$(GCC) sf-weight-vector.cc 
 	$(GCC) sf-sparse-vector.cc 
 	$(GCC) sf-data-set.cc 
-	$(GCC) sf-hash-weight-vector.cc 
-	$(GCC) sf-hash-inline.cc
 	$(GCC) sofia_wrapper.c
-	$(LINK) -o libsofia.so sofia-ml.o sofia-ml-methods.o sf-weight-vector.o sf-sparse-vector.o sf-data-set.o sf-hash-weight-vector.o sf-hash-inline.o
+	$(LINK) -o libsofia.so sofia-ml.o sofia-ml-methods.o sf-weight-vector.o sf-sparse-vector.o sf-data-set.o 
 	$(GCC) sofia_wrapper.c
 	g++ -shared -o sofia.so -L. -lsofia -lpython2.7 sofia_wrapper.o
 	mv sofia.so libsofia.so ../../
