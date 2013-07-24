@@ -1,42 +1,57 @@
-sofiapy
+This library is a work in progress
+
+pegasos
 =======
+`pegasos` is a python package for fitting SVM and logistic models via the pegasos solver. The package has an sklearn-like interface so can easily be used with existing sklearn functionality. The pegasos solver alternative between stochastic gradient descent and project steps. The number of training algorithm steps scales linearly with the regularization parameter lambda and the number of iterations; as such the model is well suited to large datasets.
 
-`sofiapy` is a set sklearn-like python binding for the google tool `sofia-ml`. These bindings do not include every feature of sofia-ml; the ranking and perceptron functionality are not included because the bindings were primary for the pegasos functionality. The bindings require a custom minimal version of sofia-ml (included), pybindgen and sklearn. See example/example.py for details.
+For details on the training algorithm see: 
 
-* sofia.so is the raw bindings, can be imported and API matches the c++ API
-* sofiapy is a wrapper round the raw bindings which have an sklearn-style interface
+http://eprints.pascal-network.org/archive/00004062/01/ShalevSiSr07.pdf. 
+
+This implementation is based on the google tool `sofia-ml`
 
 algorithm support
 ------------------
-* learners: pegasos svm, logreg pegasos, lms pegasos, sgd svm, and logreg
+* learners: pegasos svm, pegasos logistic
 * eta: basic, pegasos, constant
 * loops: stochastic, balanced stochastic
 * predictions: linear, logistic
 
+see example.py for how to use the library
+
 API support
 -----------
-* load data
-* train model
-* save model
-* load model
-* predict
-* srand bindings for seeding
+* sparse or dense matrix support
+* binary and multiclass model training
+* balanced class weightings
+* predictions (probabilistic predictions for logistic)
+* model serialisation
 
-config
-------
-Instead of command line arguments, sofiapy is controlled by a SofiaConfig struct. The structure
-has the same defaults as the sofia-ml command line tool:
+speed
+-----
+```
+samples   pegasos  liblinear  libsvm
+------------------------------------
+10^4      4.08     0.55       10.42
+10^5      4.09     17.35      2638.62
+10^6      4.63     230.71     *
+10^7      6.87     3318.32    *
+```
 
-    iterations = 100000;
-    dimensionality = 2<<16;
-    lambda_param = 0.1;
-    eta_type = PEGASOS_ETA;
-    learner_type = PEGASOS;
-    loop_type = STOCHASTIC;
-    prediction_type = LINEAR;
+\* libsvm times are missing because the models converge sometime around the heat-death of the universe
 
-The sklearn-like bindings do not need to use SofiaConfig directly.
+The constant training time of pegasos is due to keeping a constant number of iterations. For larger datasets the number of iterations should be increased. A grid-search on the lambda regularization parameter may also be benifical. The accuracy of the classifiers is generally `libsvm` > `liblinear` > `pegasos` but the differences are only 0.5-1%
+
+requirements
+------------
+* scikit-learn >= 0.13.1
 
 todo
 ----
-* predict_proba for SVM classifiers
+* a balanced stochastic training loop
+* sparsity support
+* serialisation
+* docs/test
+
+* predict\_proba for SVM classifiers
+
