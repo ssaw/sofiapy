@@ -1,41 +1,39 @@
 import time
-import sofiapy
+import pegasos
+import warnings
 
-from sklearn.datasets import load_digits
-from sklearn.cross_validation import KFold
-from sklearn.grid_search import IterGrid
+from sklearn.cross_validation import train_test_split
+from sklearn.datasets import make_classification
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
+
+def fit():
+    state=12345
+
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    for samples in [10000, 100000, 500000, 1000000, 10000000]:
+
+        models = {
+            'pegasos-svm': OneVsRestClassifier(pegasos.PegasosSVMClassifier(loop_type=pegasos.constants.LOOP_STOCHASTIC)),
+            'pegasos-log': OneVsRestClassifier(pegasos.PegasosLogisticRegression(loop_type=pegasos.constants.LOOP_STOCHASTIC)),
+            'liblinear': LinearSVC(),
+        }
+
+        print '\n%d samples' % samples
+
+        for k,v in models.items():
+            X, y = make_classification(n_samples=samples, n_informative=15)
+            train_X, test_X, train_y, test_y = train_test_split(X, y, random_state=state)
+
+            start = time.clock()
+
+            v.fit(train_X, train_y)
+            score = v.score(test_X, test_y)
+
+            end = time.clock()
+            print '%s: acc %.5f in %f seconds' % (k, score, end-start)
 
 if __name__ == '__main__':
-    data = load_digits(2)
-    X = data['data']
-    y = data['target']
-
-    param_grid = {
-        'lambda' : [0.0001, 0.001, 0.01, 0.1, 0.5, 1],
-    }
-
-    cv = 5
-    param_errors = {}
-
-    for params in IterGrid(param_grid):
-        cv_runs = []
-        start = time.clock()
-
-        for train, test in KFold(len(X), cv, indices=False):
-            train_X, train_y = X[train], y[train]
-            test_X, test_y = X[test], y[test]
-
-            model = sofiapy.PegasosSVMClassifier(lreg=params['lambda'])
-            model.fit(train_X, train_y)
-            cv_runs.append(model.score(test_X, test_y))
-
-        end = time.clock()
-
-        mean_cv_acc = sum(cv_runs)/len(cv_runs)
-        print '\navg test acc %.5f for %s' % (mean_cv_acc, params)
-        print '%d-fold CV took %f seconds' % (cv, (end-start))
-        param_errors[mean_cv_acc] = params
-
-    best_error = sorted(param_errors.keys(), reverse=True)[0]
-    print '\nacc=%.5f for %s' % (best_error, param_errors[best_error])
+    fit()
 
