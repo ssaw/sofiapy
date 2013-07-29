@@ -2,30 +2,19 @@ This library is a work in progress
 
 pegasos
 =======
-`pegasos` is a python package for fitting SVM and logistic models via the pegasos solver. The package has an sklearn-like interface so can easily be used with existing sklearn functionality. The pegasos solver alternative between stochastic gradient descent and project steps. The number of training algorithm steps scales linearly with the regularization parameter lambda and the number of iterations; as such the model is well suited to large datasets.
+pegasos is a pure-python package for fitting SVM and logistic models using the Primal Estimated sub-GrAdient SOlver. This implementation is based on the google tool `sofia-ml`. The package has an sklearn-like interface so can easily be used with existing sklearn functionality. At each training step, the pegasos solver randomly samples a batch from the training data. The runtime of the training algorithm scales linearly with the regularization parameter `lambda` and the number of training steps; as such the model is well suited to large datasets. For details on the training algorithm see: 
 
-For details on the training algorithm see: 
-
-http://eprints.pascal-network.org/archive/00004062/01/ShalevSiSr07.pdf. 
-
-This implementation is based on the google tool `sofia-ml`
-
-algorithm support
-------------------
-* learners: pegasos svm, pegasos logistic
-* eta: basic, pegasos, constant
-* loops: stochastic, balanced stochastic
-* predictions: linear, logistic
-
-See example.py for how to use the library. Probabilities are only supported for the logistic learner
+http://eprints.pascal-network.org/archive/00004062/01/ShalevSiSr07.pdf
 
 API support
 -----------
 * sparse or dense matrix support
-* binary and multiclass model training
-* balanced class weightings
-* predictions (probabilistic predictions for logistic)
-* model serialisation
+* binary classification (multiclass via sklearn.multiclass)
+* balanced class weightings via training loops
+* probabilistic predictions for logistic model
+* model serialisation via cPickle
+
+See `example.py` for how to use the library. 
 
 speed
 -----
@@ -38,16 +27,28 @@ samples   pegasos  liblinear  libsvm
 10^7      6.87     3318.32    *
 ```
 
-\* libsvm times are missing because the models converge sometime around the heat-death of the universe
+\* `libsvm` times are missing because the models converge sometime around the heat-death of the universe
 
-The constant training time of pegasos is due to keeping a constant number of iterations. For larger datasets the number of iterations should be increased. A grid-search on the lambda regularization parameter may also be benifical. The accuracy of the classifiers is generally `libsvm` > `liblinear` > `pegasos` but the differences are only 0.5-1%
+The near-constant training time of pegasos is due to the constant number of training steps. For larger datasets the number of iterations should be increased. A grid-search on the lambda regularization parameter may also be benifical. The accuracy of the classifiers is generally ordered as `libsvm` > `liblinear` > `pegasos` but the differences are only 0.5-1%
 
-requirements
-------------
+Note that training time will increase by a constant amount for sparse matrices
+
+build
+------
+Requirements are:
+
 * scikit-learn >= 0.13.1
+* numpy >= 1.7.1
+* scipy >= 0.10.1
+
+and nose for tests:
+
+```
+python setup.py nosetests
+```
 
 todo
 ----
-* sparsity support
-* serialisation
-* docs/test/setup.py
+* more tests
+* training batches (with online learning)
+

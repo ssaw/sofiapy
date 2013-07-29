@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
-
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import atleast2d_or_csr
+from scipy import sparse
 
 from . import pegasos, constants
 from .weight_vector import WeightVector
@@ -16,27 +16,29 @@ class PegasosBase(BaseEstimator, ClassifierMixin):
     def __init__(self,
                  iterations,
                  lambda_reg,
-                 eta_type,
                  learner_type,
                  loop_type):
 
         self.iterations = iterations
         self.lambda_reg = lambda_reg
-        self.eta_type = eta_type
         self.loop_type = loop_type
         self.learner_type = learner_type
 
         self.weight_vector = None
 
     def fit(self, X, y):
+        if sparse.issparse(y):
+            y = np.asarray(y.todense())
+
         self._enc = LabelEncoder()
         y = self._enc.fit_transform(y)
 
         if len(self.classes_) != 2:
-            raise ValueError("The number of classes must be 2, use sklearn.multiclass for more classes.")
+            raise ValueError("The number of classes must be 2, "
+                             "use sklearn.multiclass for more classes.")
 
-        # the LabelEncoder maps the binary labels to 0 and 1 but the training
-        # algorithm requires the labels to be -1 and +1
+        # The LabelEncoder maps the binary labels to 0 and 1 but the
+        # training algorithm requires the labels to be -1 and +1.
         y[y==0] = -1
 
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
@@ -46,7 +48,7 @@ class PegasosBase(BaseEstimator, ClassifierMixin):
                              "X has %s samples, but y has %s." %
                              (X.shape[0], y.shape[0]))
 
-        self.weight_vector = WeightVector(X.shape[1])
+        self.weight_vector = WeightVector(X)
 
         if self.loop_type == constants.LOOP_BALANCED_STOCHASTIC:
             pegasos.train_stochastic_balanced(self, X, y)
@@ -59,7 +61,7 @@ class PegasosBase(BaseEstimator, ClassifierMixin):
 
     def decision_function(self, X):
         if not self.weight_vector:
-            raise ValueError('must call `fit` before `predict` or `decision_function`')
+            raise ValueError('must call `fit` before `decision_function`')
 
         return pegasos.predict(self, X)
 
@@ -70,8 +72,9 @@ class PegasosBase(BaseEstimator, ClassifierMixin):
         d = self.decision_function(X)
         d[d>0] = 1
         d[d<=0] = 0
-        d = d.astype(np.int32, copy=False)
 
+        # convert to int for the LabelEncoder
+        d = d.astype(np.int32, copy=False)
         return self._enc.inverse_transform(d)
 
     @property
